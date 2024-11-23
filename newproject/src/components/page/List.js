@@ -41,7 +41,7 @@ const List = () => {
       <ul>
         {users.map((user) => (
           <li key={user.id}>
-            {user.id}, {user.name}, {user.age} years old, {user.gender}, {user.country}, {user.job}
+            {user.id}, {user.name}
             
             <div>
               {/* Detail button */}
