@@ -1,62 +1,135 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useParams } from "react-router-dom";
-
+//수정 관련 페이지
 const Update = () => {
-  const { id } = useParams();  // URL에서 id를 받아오기
+  const { id } = useParams();
+  const navigate = useNavigate();
 
   const [inputData, setInputData] = useState({
     id: "",
     name: "",
-    email: "",
     age: "",
+    gender: "",
+    country: "",
+    job: "",
   });
 
-  const [editCount, setEditCount] = useState(0);
+  const [editCount, setEditCount] = useState(0); // useState for 수정 횟 수 세기
+  const [editFields, setEditFields] = useState({}); // useState for 필드 변경 관련
+
+  const nameRef = useRef(null);//참조 하자
+  const ageRef = useRef(null);
+
+  // 기존 원래 정보 불러와서 건드리자.
+  const original = useRef({
+    id: "",
+    name: "",
+    age: "",
+    gender: "",
+    country: "",
+    job: "",
+  });
 
   useEffect(() => {
-    // URL로 id받기 ==> API 호출
-    axios.get(`https://api.example.com/user/${id}`)
-      .then((response) => {
-        setInputData({
-          id: response.data.id,
-          name: response.data.name,
-          email: response.data.email,
-          age: response.data.age,
+    if (id) {
+      // 전체 정보 말고 url로 특정 정보 Fetch하기
+      axios
+        .get(`https://672818a8270bd0b975544f01.mockapi.io/api/v1/users/${id}`)
+        .then((response) => {
+          const fetchedData = {
+            id: response.data.id,
+            name: response.data.name,
+            age: response.data.age,
+            gender: response.data.gender,
+            country: response.data.country,
+            job: response.data.job,
+          };
+
+          setInputData(fetchedData);
+          original.current = fetchedData; 
+          setEditFields({});
+        })
+        .catch((error) => {
+          console.log("Error fetching data", error);
+          
         });
-      })
-      .catch((error) => console.error("Error fetching data", error));
-  }, [id]);  // 다시 호출할 수 있게끔!!!
+    }
+  }, [id]);
 
-  const handleInputChange = (e) => {
+  const handleInput = (e) => {
     const { name, value } = e.target;
-    
-    // 다시 reload...
-    const updatedData = { ...inputData, [name]: value };
-    setInputData(updatedData);
 
-    // 수정한 회수 증가시키자
-    setEditCount((prevCount) => prevCount + 1);
+    setInputData((prevData) => ({ ...prevData, [name]: value }));
 
-    // API 호출
-    axios.put(`https://api.example.com/user/${id}`, updatedData)
-      .then((response) => {
-        console.log("Data updated successfully:", response.data);
-      })
-      .catch((error) => console.error("Error updating data", error));
+    // Track modified fields only if the value changes
+    if (original.current[name] !== value) {
+      setEditFields((prevFields) => ({
+        ...prevFields,
+        [name]: value,
+      }));
+    }
   };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+
+    // Compare with original data to check for edits
+    if (original.current[name] !== value) {
+      setEditCount((prevCount) => prevCount + 1); // Increment edit count
+      setEditFields((prevFields) => ({
+        ...prevFields,
+        [name]: value,
+      }));
+    }
+  };
+
+  const validateForm = useCallback(() => {
+    let isValid = true;
+
+    if (!inputData.id) {//이제 필요 없긴 한데...(고정이니까)
+      isValid = false;
+    }
+
+    return isValid;
+  }, [inputData.id]);
+
+  useEffect(() => {
+    if (inputData.id && validateForm()) {
+      // Only update if there are edit fields
+      const dataToUpdate = Object.keys(editFields).length > 0 ? editFields : null;
+
+      if (dataToUpdate) {
+        axios
+          .put(`https://672818a8270bd0b975544f01.mockapi.io/api/v1/users/${inputData.id}`, dataToUpdate)
+          .then((response) => {
+            setEditFields({});
+            setInputData((prevData) => ({
+              ...prevData,
+              ...dataToUpdate,
+            }));
+            
+          })
+          .catch((error) => {
+            console.log("Error updating data");
+           
+          });
+      }
+    }
+  }, [inputData.id, editFields, validateForm, navigate]);
 
   return (
     <div>
       <h2>Update User Info</h2>
-      <form>
+      <form onSubmit={(e) => e.preventDefault()}>
         <div>
           <label>ID:</label>
           <input
             type="text"
             name="id"
             value={inputData.id}
-            readOnly
+            onChange={(e) => setInputData((prevData) => ({ ...prevData, id: e.target.value }))}
+            disabled
           />
         </div>
         <div>
@@ -65,16 +138,9 @@ const Update = () => {
             type="text"
             name="name"
             value={inputData.name}
-            onChange={handleInputChange}
-          />
-        </div>
-        <div>
-          <label>Email:</label>
-          <input
-            type="email"
-            name="email"
-            value={inputData.email}
-            onChange={handleInputChange}
+            onChange={handleInput}
+            onBlur={handleBlur}
+            ref={nameRef}
           />
         </div>
         <div>
@@ -83,12 +149,56 @@ const Update = () => {
             type="number"
             name="age"
             value={inputData.age}
-            onChange={handleInputChange}
+            onChange={handleInput}
+            onBlur={handleBlur}
+            ref={ageRef}
+          />
+        </div>
+
+        <div>
+          <label>Gender:</label>
+          <input
+            type="radio"
+            name="gender"
+            value="MAN"
+            checked={inputData.gender === "MAN"}
+            onChange={handleInput}
+            onBlur={handleBlur}
+          /> Male
+          <input
+            type="radio"
+            name="gender"
+            value="WOMAN"
+            checked={inputData.gender === "WOMAN"}
+            onChange={handleInput}
+            onBlur={handleBlur}
+          /> Female
+        </div>
+
+        <div>
+          <label>Country:</label>
+          <input
+            type="text"
+            name="country"
+            value={inputData.country}
+            onChange={handleInput}
+            onBlur={handleBlur}
+          />
+        </div>
+
+        <div>
+          <label>Job:</label>
+          <input
+            type="text"
+            name="job"
+            value={inputData.job}
+            onChange={handleInput}
+            onBlur={handleBlur}
           />
         </div>
       </form>
       <div>
-        <p>Total Edits: {editCount}</p>
+        <p>Total Edits: {editCount}</p> {/*수정 횟 수 (내용물 바꾸고 필드에서 나가면 세자)*/}
       </div>
     </div>
   );

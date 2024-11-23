@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Create = () => {
@@ -10,9 +10,48 @@ const Create = () => {
     job: "",
   });
 
-  const navigate = useNavigate();  // hook
+  // useRef 사용하자 ==> 각 input 필드 추가하기
+  const nameRef = useRef(null);
+  const ageRef = useRef(null);
+  const genderRef = useRef(null);
+  const countryRef = useRef(null);
+  const jobRef = useRef(null);
+
+  const navigate = useNavigate();  // hook도 이번에 쓴다.
+
+  // validate 함수
+  const validateForm = () => {
+    if (!formData.name) {
+      nameRef.current.focus();
+      alert(" Enter name!");
+      return false;
+    }
+    if (!formData.age) {
+      ageRef.current.focus();
+      alert("Enter age!(only number)");
+      return false;
+    }
+    if (!formData.gender) {
+      genderRef.current.focus();
+      alert("Choose gender!");
+      return false;
+    }
+    if (!formData.country) {
+      countryRef.current.focus();
+      alert("Enter Country!");
+      return false;
+    }
+    if (!formData.job) {
+      jobRef.current.focus();
+      alert("Enter Job!");
+      return false;
+    }
+    return true;
+  };
 
   const createData = async () => {
+    if (!validateForm()) return;  // if No valid, shall not pass!
+
     try {
       const response = await fetch("https://672818a8270bd0b975544f01.mockapi.io/api/v1/users", {
         method: "POST",
@@ -21,8 +60,7 @@ const Create = () => {
       });
 
       if (response.status === 201) {
-        const data = await response.json();  // 내 목 데이터 가져오기
-        alert("successfully create!");
+        alert("Successfully created!");
         setFormData({
           name: "",
           age: "",
@@ -30,12 +68,12 @@ const Create = () => {
           country: "",
           job: "",
         });
-        
-        // 새로 만들어진 데이터의 id를 update 페이지로 가져가야지
-        navigate(`/update/${data.id}`);
+
+        // if complete, go to list
+        navigate("/list");
       }
     } catch (error) {
-      console.error("Error creating user:", error);
+      console.log("Fail to create user");
     }
   };
 
@@ -45,6 +83,7 @@ const Create = () => {
       <div className="mb-3">
         <label>Name:</label>
         <input
+          ref={nameRef}//여기다가 참조
           type="text"
           className="form-control"
           value={formData.name}
@@ -54,6 +93,7 @@ const Create = () => {
       <div className="mb-3">
         <label>Age:</label>
         <input
+          ref={ageRef}//여기다가 참조
           type="number"
           className="form-control"
           value={formData.age}
@@ -62,7 +102,7 @@ const Create = () => {
       </div>
       <div className="mb-3">
         <label>Gender:</label>
-        <div>
+        <div ref={genderRef}>
           <input
             type="radio"
             name="gender"
@@ -84,6 +124,7 @@ const Create = () => {
       <div className="mb-3">
         <label>Country:</label>
         <input
+          ref={countryRef}//여기다가 참조
           type="text"
           className="form-control"
           value={formData.country}
@@ -93,6 +134,7 @@ const Create = () => {
       <div className="mb-3">
         <label>Job:</label>
         <input
+          ref={jobRef}//여기다가 참조
           type="text"
           className="form-control"
           value={formData.job}
