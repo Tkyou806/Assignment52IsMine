@@ -31,10 +31,10 @@ const Detail = () => {
   return (
 
     <div>
-      <h2>Detail Page</h2>
+      <h2 >Detail Page</h2>
       {user ? (
-        <div>
-          <p>ID: {user.id}</p>
+        <div className="form-control"> 
+          <p >ID: {user.id}</p>
           <p>Name: {user.name}</p>
           <p>Age: {user.age} years old</p>
           <p>Gender: {user.gender}</p>
